@@ -1,0 +1,44 @@
+/* 🟢 Estilos generales */
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f8f9fa;
+}
+
+/* 🟢 Estilos para las tarjetas de notas */
+.card {
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+/* 🟢 Estilos para formularios */
+.form-control:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* 🟢 Estilos para etiquetas */
+.badge {
+  font-weight: normal;
+  padding: 5px 10px;
+  border-radius: 20px;
+}
+
+/* 🟢 Mejoras visuales para botones */
+.btn {
+  border-radius: 5px;
+  padding: 8px 16px;
+}
+
+.btn-primary {
+  background-color: #007bff;
+}
+
+.btn-primary:hover {
+  background-color: #0069d9;
+}
