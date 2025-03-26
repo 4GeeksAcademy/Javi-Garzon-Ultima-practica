@@ -8,7 +8,7 @@ import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { Notes } from "./pages/Notes";
-import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Private } from "./components/Private";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -27,3 +27,4 @@ export const router = createBrowserRouter(
     </Route>
   )
 );
+

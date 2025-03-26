@@ -5,9 +5,10 @@ from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import db, User, Note, Tag
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
+
 # 🟢 Importamos funciones de JWT para autenticación
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
@@ -18,7 +19,7 @@ CORS(api)
 # 🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴❤️
 
 # Ruta de prueba (pública)
-@api.route('/hello', methods=['GET'])
+@api.route('/api/hello', methods=['GET'])
 def handle_hello():
     response_body = {
         "message": "Hello! I'm a message that came from the backend"
@@ -28,23 +29,27 @@ def handle_hello():
 # 🟢 RUTAS DE AUTENTICACIÓN
 
 # 🟢 Endpoint para registro de usuarios
-@api.route('/signup', methods=['POST'])
+@api.route('/api/signup', methods=['POST'])
 def signup():
     # 🟢 Obtenemos los datos del cuerpo de la petición (JSON)
     body = request.get_json()
+    hashed_password = generate_password_hash(body["password"])
+    new_user = User(email=body["Nombre"], password=hashed_password)
+    db.session.add(new_user)
+    db.session.commit()
 
-    # 🟢 Validación: aseguramos que se proporcionen email y password
-    if not body or not body.get("email") or not body.get("password"):
-        return jsonify({"error": "Debes proporcionar email y password"}), 400
+    # 🟢 Validación: aseguramos que se proporcionen Nombre y password
+    if not body or not body.get("Nombre") or not body.get("password"):
+        return jsonify({"error": "Debes proporcionar Nombre y password"}), 400
 
     # 🟢 Comprobamos si el usuario ya existe para evitar duplicados
-    if User.query.filter_by(email=body["email"]).first():
+    if User.query.filter_by(email=body["Nombre"]).first():
         return jsonify({"error": "El usuario ya existe"}), 400
 
     try:
         # 🟢 Creamos un nuevo usuario (la contraseña se hasheará en el constructor)
         new_user = User(
-            email=body["email"],
+            email=body["Nombre"],
             password=body["password"]
         )
         # 🟢 Añadimos el usuario a la sesión de base de datos
@@ -60,17 +65,19 @@ def signup():
         return jsonify({"error": str(e)}), 500
 
 # 🟢 Endpoint para inicio de sesión (generación de token JWT)
-@api.route('/token', methods=['POST'])
+@api.route('/api/token', methods=['POST'])
 def create_token():
     # 🟢 Obtenemos los datos del cuerpo de la petición
     body = request.get_json()
 
+    user = User.query.filter_by(email=body["Nombre"]).first()
+
     # 🟢 Validación de campos requeridos
-    if not body or not body.get("email") or not body.get("password"):
-        return jsonify({"error": "Debes proporcionar email y password"}), 400
+    if not body or not body.get("Nombre") or not body.get("password"):
+        return jsonify({"error": "Debes proporcionar Nombre y password"}), 400
 
     # 🟢 Buscamos el usuario por email
-    user = User.query.filter_by(email=body["email"]).first()
+    user = User.query.filter_by(email=body["Nombre"]).first()
 
     # 🟢 Validamos que el usuario exista y la contraseña sea correcta
     if not user or not user.check_password(body["password"]):
@@ -88,7 +95,7 @@ def create_token():
 # 🟢 RUTAS PARA NOTAS (PROTEGIDAS)
 
 # 🟢 Obtener todas las notas del usuario actual
-@api.route('/notes', methods=['GET'])
+@api.route('/api/notes', methods=['GET'])
 # 🟢 jwt_required() protege esta ruta: solo usuarios con token válido pueden acceder
 @jwt_required()
 def get_user_notes():
@@ -103,7 +110,7 @@ def get_user_notes():
     return jsonify(notes_serialized), 200
 
 # 🟢 Crear una nueva nota
-@api.route('/notes', methods=['POST'])
+@api.route('/api/notes', methods=['POST'])
 @jwt_required()
 def create_note():
     # 🟢 Obtenemos el ID del usuario del token JWT
@@ -148,7 +155,7 @@ def create_note():
         return jsonify({"error": str(e)}), 500
 
 # 🟢 Obtener una nota específica
-@api.route('/notes/<int:note_id>', methods=['GET'])
+@api.route('/api/notes/<int:note_id>', methods=['GET'])
 @jwt_required()
 def get_note(note_id):
     current_user_id = get_jwt_identity()
@@ -163,7 +170,7 @@ def get_note(note_id):
     return jsonify(note.serialize()), 200
 
 # 🟢 Actualizar una nota existente
-@api.route('/notes/<int:note_id>', methods=['PUT'])
+@api.route('/api/notes/<int:note_id>', methods=['PUT'])
 @jwt_required()
 def update_note(note_id):
     current_user_id = get_jwt_identity()
@@ -205,7 +212,7 @@ def update_note(note_id):
         return jsonify({"error": str(e)}), 500
 
 # 🟢 Eliminar una nota
-@api.route('/notes/<int:note_id>', methods=['DELETE'])
+@api.route('/api/notes/<int:note_id>', methods=['DELETE'])
 @jwt_required()
 def delete_note(note_id):
     current_user_id = get_jwt_identity()
@@ -230,7 +237,7 @@ def delete_note(note_id):
 # 🟢 RUTAS PARA ETIQUETAS (PROTEGIDAS)
 
 # 🟢 Obtener todas las etiquetas disponibles
-@api.route('/tags', methods=['GET'])
+@api.route('/api/tags', methods=['GET'])
 @jwt_required()
 def get_all_tags():
     # 🟢 Obtenemos todas las etiquetas (son globales, no por usuario)
@@ -240,7 +247,7 @@ def get_all_tags():
     return jsonify(tags_serialized), 200
 
 # 🟢 Obtener notas por etiqueta
-@api.route('/tags/<string:tag_name>/notes', methods=['GET'])
+@api.route('/api/tags/<string:tag_name>/notes', methods=['GET'])
 @jwt_required()
 def get_notes_by_tag(tag_name):
     current_user_id = get_jwt_identity()
